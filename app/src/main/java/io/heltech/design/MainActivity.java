@@ -41,7 +41,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     boolean visibleFlag = true;
     ImageButton settingsBtn;
 
-    String playlistURL = "http://ott.inmart.tv/playlist?token=2b94986d3122505eb9f17afe8b6dead8";
+    String playlistURL = "http://ott.inmart.tv/playlist?token=";
     List<Channel> list;
     LVAdapter adapter ;
     Context context;
