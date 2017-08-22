@@ -2,18 +2,21 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="fill_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="50dp"
     android:background="@drawable/list_item_styles"
     android:weightSum="1">
 
     <ImageView
-        android:id="@+id/icon"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:id="@+id/logo"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
 
         android:layout_gravity="center"
-        android:layout_margin="3dp"
-        android:background="@mipmap/ic_launcher">
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="3dp"
+        android:layout_centerVertical="true"
+        android:layout_alignParentStart="true"
+        app:srcCompat="@drawable/movie">
     </ImageView>
 
     <TextView
@@ -22,25 +25,21 @@
         android:layout_height="wrap_content"
         android:id="@+id/name"
         android:layout_weight="1"
-        android:layout_alignTop="@+id/icon"
-        android:textSize="12sp"
+        android:textSize="15sp"
         android:layout_marginLeft="5dp"
         android:layout_marginRight="5dp"
-        android:layout_marginTop="5dp"
-        android:layout_marginBottom="5dp"
-        android:layout_alignParentEnd="true"
-        android:layout_toEndOf="@+id/icon" />
+        android:layout_centerVertical="true"
+        android:layout_toEndOf="@+id/logo" />
 
     <TextView
         android:text="Atletico Madrid - Real Madrid UEFA Champions League"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/textView2"
+        android:id="@+id/desc"
         android:layout_weight="1"
-        android:textSize="10"
-        android:layout_marginLeft="5dp"
-        android:layout_marginRight="5dp"
-        android:layout_below="@+id/name"
-        android:layout_toEndOf="@+id/icon" />
+        android:textSize="10sp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:visibility="invisible" />
 
 </RelativeLayout>

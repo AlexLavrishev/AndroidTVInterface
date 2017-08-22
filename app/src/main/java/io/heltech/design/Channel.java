@@ -1,28 +1,25 @@
 package io.heltech.design;
 
+import android.graphics.drawable.Drawable;
+import android.media.Image;
+
 /**
  * Created by shadow on 03/08/17.
  */
 
 public class Channel {
 
+
+
     private int id;
     private String name;
-    private String stream;
-    private byte[] logo;
+    private String desc;
+    private String logo;
 
-    public Channel(int id, String name, String stream, byte[] logo) {
+    public Channel(int id, String name, String desc, String logo) {
         this.id = id;
         this.name = name;
-        this.stream = stream;
-        this.logo = logo;
-    }
-
-    public byte[] getLogo() {
-        return logo;
-    }
-
-    public void setLogo(byte[] logo) {
+        this.desc = desc;
         this.logo = logo;
     }
 
@@ -42,11 +39,20 @@ public class Channel {
         this.name = name;
     }
 
-    public String getStream() {
-        return stream;
+    public String getDesc() {
+        return desc;
     }
 
-    public void setStream(String stream) {
-        this.stream = stream;
+    public void setDesc(String desc) {
+        this.desc = desc;
     }
+
+    public String getLogo() {
+        return logo;
+    }
+
+    public void setLogo(String logo) {
+        this.logo = logo;
+    }
+
 }

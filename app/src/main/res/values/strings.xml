@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Design</string>
+    <string name="refresh_started">some text on refresh</string>
 </resources>

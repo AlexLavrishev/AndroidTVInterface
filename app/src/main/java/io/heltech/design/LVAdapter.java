@@ -5,6 +5,9 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
+import android.os.AsyncTask;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,19 +15,23 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import java.io.InputStream;
+import java.lang.ref.WeakReference;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.List;
+
+import cz.msebera.android.httpclient.HttpStatus;
 
 /**
  * Created by shadow on 03/08/17.
  */
 
 public class LVAdapter extends BaseAdapter {
-    Typeface face;
     private List<Channel> list;
     private LayoutInflater layoutInflater;
-    public LandscapeListViewAdapter(Context context, List<Channel> list) {
+    public LVAdapter(Context context, List<Channel> list) {
         this.list = list;
-        face= Typeface.createFromAsset(context.getAssets(), "fonts/thin.ttf");
         layoutInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     }
 
@@ -50,21 +57,22 @@ public class LVAdapter extends BaseAdapter {
             view = layoutInflater.inflate(R.layout.list_item, parent, false);
         }
         Channel channel = getChannel(position);
-        TextView name = (TextView) view.findViewById(R.id.channelName);
+
+        TextView name = (TextView) view.findViewById(R.id.name);
         name.setText(channel.getName());
-        name.setTextColor(Color.parseColor("#484848"));
-        name.setTypeface(face);
-        TextView  stream = (TextView) view.findViewById(R.id.stream);
-        stream.setText(channel.getStream());
-        stream.setVisibility(View.INVISIBLE);
-        Bitmap img =  BitmapFactory.decodeByteArray(channel.getLogo(), 0, channel.getLogo().length);
-        ImageView logo = (ImageView) view.findViewById(R.id.icon);
+        TextView desc = (TextView) view.findViewById(R.id.desc);
+        desc.setText(channel.getDesc());
+
+        Bitmap img =  BitmapFactory.decodeFile(channel.getLogo());
+        ImageView logo = (ImageView) view.findViewById(R.id.logo);
         logo.setImageBitmap(img);
-        view.findViewById(R.id.channelName);
         return view;
     }
 
     private Channel getChannel(int position){
         return (Channel) getItem(position);
     }
+
 }
+
+
