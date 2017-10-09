@@ -52,35 +52,6 @@
             android:text="Настройки"
             android:layout_width="50dp"
             android:layout_height="50dp"
-            android:id="@+id/button4"
-            style="@style/Widget.AppCompat.Button.Borderless"
-            android:elevation="0dp"
-            app:srcCompat="@drawable/collapse_arrow"
-            android:scaleType="centerInside"
-            android:visibility="visible"
-            android:layout_marginRight="10dp"
-            android:layout_alignParentTop="true"
-            android:layout_toStartOf="@+id/settings_btn" />
-
-        <ImageButton
-            android:text="Настройки"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:id="@+id/button3"
-            style="@style/Widget.AppCompat.Button.Borderless"
-            android:elevation="0dp"
-            app:srcCompat="@drawable/full_screen"
-            android:scaleType="centerInside"
-            android:visibility="visible"
-            android:layout_marginRight="10dp"
-            android:layout_alignParentTop="true"
-            android:layout_toStartOf="@+id/button4"
-            android:tint="@android:color/background_light" />
-
-        <ImageButton
-            android:text="Настройки"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
             android:id="@+id/settings_btn"
             style="@style/Widget.AppCompat.Button.Borderless"
             android:elevation="0dp"
@@ -90,6 +61,21 @@
             android:layout_marginRight="10dp"
             android:layout_alignParentTop="true"
             android:layout_alignParentEnd="true" />
+
+        <ImageButton
+            android:text="Настройки"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:id="@+id/fullview_btn"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:elevation="0dp"
+            app:srcCompat="@drawable/full_screen"
+            android:scaleType="centerInside"
+            android:visibility="visible"
+            android:layout_marginRight="10dp"
+            android:tint="@android:color/background_light"
+            android:layout_alignParentTop="true"
+            android:layout_toEndOf="@+id/swiperefresh" />
 
     </RelativeLayout>
 

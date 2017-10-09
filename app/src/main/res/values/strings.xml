@@ -1,4 +1,25 @@
 <resources>
-    <string name="app_name">Design</string>
+    <string name="app_name">Inmart TV</string>
     <string name="refresh_started">some text on refresh</string>
+    <string name="title_activity_settings">Settings</string>
+
+    <string-array name="deinterlace">
+        <item>Нет</item>
+        <item>Отбрасывание</item>
+        <item>Смешивание</item>
+        <item>Среднее</item>
+        <item>Удвоение</item>
+        <item>Линейное</item>
+        <item>X</item>
+        <item>Yadif</item>
+        <item>Yadif(2x)</item>
+        <item>Фосфор</item>
+        <item>Фильм NTSC (IVTC)</item>
+    </string-array>
+    <string-array name="buffer">
+        <item>Нет</item>
+        <item>Низкая</item>
+        <item>Средняя</item>
+        <item>Высокая</item>
+    </string-array>
 </resources>

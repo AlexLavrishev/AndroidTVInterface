@@ -1,8 +1,5 @@
 package io.heltech.design;
 
-import android.graphics.drawable.Drawable;
-import android.media.Image;
-
 /**
  * Created by shadow on 03/08/17.
  */
@@ -13,13 +10,13 @@ public class Channel {
 
     private int id;
     private String name;
-    private String desc;
+    private String url;
     private String logo;
 
-    public Channel(int id, String name, String desc, String logo) {
+    public Channel(int id, String name, String url, String logo) {
         this.id = id;
         this.name = name;
-        this.desc = desc;
+        this.url = url;
         this.logo = logo;
     }
 
@@ -39,12 +36,12 @@ public class Channel {
         this.name = name;
     }
 
-    public String getDesc() {
-        return desc;
+    public String getUrl() {
+        return url;
     }
 
-    public void setDesc(String desc) {
-        this.desc = desc;
+    public void setUrl(String url) {
+        this.url = url;
     }
 
     public String getLogo() {
