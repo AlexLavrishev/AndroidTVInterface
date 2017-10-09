@@ -18,6 +18,7 @@ public class Preference {
     final String BUFFER_MODE = "buffer";
     final String INFO = "information";
     final String FORGOT_PASS = "forgot_password";
+    final String CURRENT_CHANNEL = "current_channel";
 
 
     private Context ctx;
@@ -46,6 +47,11 @@ public class Preference {
         return getString(FORGOT_PASS, ctx);
     }
 
+    public String getCurrentChannel(){
+        return getString(CURRENT_CHANNEL, ctx);
+    }
+
+
     public void setToken(String token){
         setString(TOKEN, token, ctx);
     }
@@ -64,6 +70,9 @@ public class Preference {
 
     public void setForgotPassText(String text){
         setString(FORGOT_PASS, text, ctx);
+    }
+    public void setCurrentChannel(String text){
+        setString(CURRENT_CHANNEL, text, ctx);
     }
 
     private static String getString(String key, Context context) {

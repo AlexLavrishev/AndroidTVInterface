@@ -7,16 +7,20 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.AdapterView;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
@@ -25,6 +29,11 @@ import android.widget.RelativeLayout;
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.AsyncHttpResponseHandler;
 import com.loopj.android.http.RequestHandle;
+
+import org.videolan.libvlc.IVLCVout;
+import org.videolan.libvlc.LibVLC;
+import org.videolan.libvlc.Media;
+import org.videolan.libvlc.MediaPlayer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -41,7 +50,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     private static final String TAG = "MainActivity: ";
     RelativeLayout controlView;
-    RelativeLayout mainView;
+    FrameLayout mainView;
 
 
 
@@ -57,17 +66,32 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     ListView listView ;
     ChannelsDB dbHelper;
     Preference pref;
+
+
+
+    //////VLC
+    private SurfaceView surfaceView;
+    private SurfaceHolder surfaceHolder;
+    private LibVLC libvlc = null;
+    private MediaPlayer mediaPlayer = null;
+    private IVLCVout ivlcVout;
+    private Media media;
+    String url;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         controlView = (RelativeLayout)findViewById(R.id.control_view);
-        mainView = (RelativeLayout)findViewById(R.id.main_view);
+        mainView = (FrameLayout)findViewById(R.id.fullScreenFrame);
         mySwipeRefreshLayout = (SwipeRefreshLayout)findViewById(R.id.swiperefresh);
         context = this;
         pref = new Preference(context);
+
+
         listView = (ListView)findViewById(R.id.listview);
         settingsBtn = (ImageButton)findViewById(R.id.settings_btn);
         settingsBtn.setOnClickListener(this);
@@ -77,12 +101,27 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         mainView.setOnTouchListener(this);
         dbHelper = new ChannelsDB(this);
         InitListView();
-        EPGThread myThread = new EPGThread(this);
-        myThread.start();
+        url = pref.getCurrentChannel();
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                Log.i(TAG, "onItemClick: " + list.get(i).getUrl());
+                pref.setCurrentChannel(list.get(i).getUrl());
+                url = pref.getCurrentChannel();
+                mediaPlayer.stop();
+                media = new Media(libvlc, Uri.parse(url));
+                media.setHWDecoderEnabled(true, true);
+                mediaPlayer.setMedia(media);
+                mediaPlayer.play();
+                int sw = getWindow().getDecorView().getWidth();
+                int sh = getWindow().getDecorView().getHeight();
+                if (sw * sh == 0) {
+                    Log.e(TAG, "Invalid surface size");
+                    return;
+                }
+                mediaPlayer.getVLCVout().setWindowSize(sw, sh);
+                mediaPlayer.setScale(0);
+                Log.i(TAG, "surfaceCreated: " + url);
+
             }
         });
         mySwipeRefreshLayout.setOnRefreshListener(
@@ -94,6 +133,9 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                     }
                 }
         );
+
+        surfaceView = (SurfaceView) findViewById(R.id.player_surface);
+        initPlayer();
     }
 
 
@@ -101,7 +143,14 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     protected void onResume() {
         super.onResume();
         InitListView();
+        initPlayer();
         Log.i(TAG, "onResume: ");
+    }
+
+    @Override
+    protected void onDestroy(){
+        super.onDestroy();
+        Log.i(TAG, "onDestroy: ");
     }
 
     private void InitListView(){
@@ -130,6 +179,9 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 adapter  = new LVAdapter(context, list);
                 listView.setAdapter(adapter);
                 mySwipeRefreshLayout.setRefreshing(false);
+            }
+            if ( pref.getCurrentChannel() == null){
+                pref.setCurrentChannel(list.get(0).getUrl());
             }
 
         }
@@ -189,8 +241,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         });
     }
 
-
-
     private void SaveImageFromUrl(final String logo) {
         final String filename = "logo" + logo + ".png";
         final String URL = "http://ott.inmart.tv/logo/"+logo+".png";
@@ -226,10 +276,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         backThread.start();
     }
 
-
-
-
-
     private void ToggleView(){
         if (visibleFlag){
             Animation animation1 = new AlphaAnimation(1.0f, 0.0f);
@@ -249,7 +295,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     @Override
     public boolean onTouch(View view, MotionEvent motionEvent) {
         int id  = view.getId();
-        if ( id == R.id.main_view && motionEvent.getAction() == MotionEvent.ACTION_DOWN){
+        if ( id == R.id.fullScreenFrame && motionEvent.getAction() == MotionEvent.ACTION_DOWN){
             ToggleView();
         }
         return false;
@@ -272,4 +318,63 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 break;
         }
     }
+
+    ///// VLC
+    private void initPlayer() {
+        if (libvlc != null){
+            Log.i(TAG, "initPlayer: first player init");
+            mediaPlayer.stop();
+        }
+        if (url == null){
+            Log.i(TAG, "initPlayer: Empty playlist");
+            return;
+        }else{
+            Log.i(TAG, "initPlayer: " + url);
+        }
+        ArrayList<String> options = new ArrayList<>();
+        options.add("--aout=opensles");
+        options.add("--audio-time-stretch");
+        options.add("--avcodec-hw=any");
+
+        libvlc = new LibVLC(MainActivity.this, options);
+        surfaceHolder = surfaceView.getHolder();
+        surfaceHolder.setKeepScreenOn(true);
+        surfaceHolder.addCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(SurfaceHolder holder) {
+                int sw = getWindow().getDecorView().getWidth();
+                int sh = getWindow().getDecorView().getHeight();
+                if (sw * sh == 0) {
+                    Log.e(TAG, "Invalid surface size");
+                    return;
+                }
+                mediaPlayer.getVLCVout().setWindowSize(sw, sh);
+                mediaPlayer.setScale(0);
+                Log.i(TAG, "surfaceCreated: " + url);
+            }
+
+            @Override
+            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+
+            }
+
+            @Override
+            public void surfaceDestroyed(SurfaceHolder holder) {
+                Log.i(TAG, "surfaceDestroyed: ");
+                mediaPlayer.stop();
+            }
+        });
+        mediaPlayer = new MediaPlayer(libvlc);
+        media = new Media(libvlc, Uri.parse(url));
+
+        media.setHWDecoderEnabled(true, true);
+        mediaPlayer.setMedia(media);
+        ivlcVout = mediaPlayer.getVLCVout();
+        ivlcVout.setVideoView(surfaceView);
+        ivlcVout.attachViews();
+        mediaPlayer.play();
+    }
+
+
+
 }

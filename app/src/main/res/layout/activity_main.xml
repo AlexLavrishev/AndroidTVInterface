@@ -13,14 +13,33 @@
     android:background="@drawable/legoa">
 
 
-    <RelativeLayout
+
+
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_alignParentBottom="true"
-        android:layout_toEndOf="@+id/listview"
-        android:id="@+id/main_view">
+        android:fitsSystemWindows="false"
+        android:id="@+id/fullScreenFrame"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true">
 
-    </RelativeLayout>
+        <FrameLayout
+            android:id="@+id/player_surface_frame"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:foregroundGravity="clip_horizontal|clip_vertical"
+            tools:ignore="true">
+
+            <SurfaceView
+                android:id="@+id/player_surface"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:layout_gravity="center_vertical" />
+
+        </FrameLayout>
+    </FrameLayout>
+
 
     <RelativeLayout
         android:layout_width="match_parent"
