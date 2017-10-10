@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,6 +13,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import java.util.List;
 
+import static android.content.ContentValues.TAG;
 
 
 /**
@@ -44,9 +46,12 @@ public class LVAdapter extends BaseAdapter {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         View view = convertView;
+
+
         if (view == null){
             view = layoutInflater.inflate(R.layout.list_item, parent, false);
         }
+
         Channel channel = getChannel(position);
 
         TextView name = (TextView) view.findViewById(R.id.name);
@@ -63,6 +68,7 @@ public class LVAdapter extends BaseAdapter {
     private Channel getChannel(int position){
         return (Channel) getItem(position);
     }
+
 
 }
 

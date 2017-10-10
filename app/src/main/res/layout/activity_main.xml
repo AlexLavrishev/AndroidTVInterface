@@ -63,7 +63,7 @@
                 android:clickable="true"
                 style="@style/Widget.AppCompat.ListView.DropDown"
                 android:layout_width="250dp"
-
+                android:listSelector="@drawable/list_item_styles_selected"
                 android:layout_alignParentStart="true" />
         </android.support.v4.widget.SwipeRefreshLayout>
 

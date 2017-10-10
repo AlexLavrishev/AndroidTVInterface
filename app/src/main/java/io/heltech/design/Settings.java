@@ -58,9 +58,6 @@ public class Settings extends AppCompatActivity implements View.OnClickListener,
 
         deinterlace.setSelection(pref.getDeinterlaceMode());
         buffer.setSelection(pref.getBufferMode());
-
-
-
     }
 
 
