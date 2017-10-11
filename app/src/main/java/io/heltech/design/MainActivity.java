@@ -61,7 +61,7 @@ import java.util.List;
 
 
 
-public class MainActivity extends AppCompatActivity implements View.OnTouchListener, View.OnClickListener, ListView.OnItemClickListener, SwipeRefreshLayout.OnRefreshListener {
+public class MainActivity extends AppCompatActivity implements IVLCVout.Callback ,View.OnTouchListener, View.OnClickListener, ListView.OnItemClickListener, SwipeRefreshLayout.OnRefreshListener {
 
     private static final String TAG = "MainActivity: ";
     RelativeLayout controlView;
@@ -84,6 +84,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private MediaPlayer mediaPlayer = null;
     private IVLCVout ivlcVout;
     private Media media;
+    int newWidth, newHeight;
     String url;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -178,7 +179,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             return;
         }
         mediaPlayer.getVLCVout().setWindowSize(sw, sh);
-        mediaPlayer.setScale(0);
+//        mediaPlayer.setScale(0);
         Log.i(TAG, "surfaceCreated: " + url);
     }
 
@@ -386,26 +387,17 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         surfaceHolder.addCallback(new SurfaceHolder.Callback() {
             @Override
             public void surfaceCreated(SurfaceHolder holder) {
-                int sw = getWindow().getDecorView().getWidth();
-                int sh = getWindow().getDecorView().getHeight();
-                if (sw * sh == 0) {
-                    Log.e(TAG, "Invalid surface size");
-                    return;
-                }
-                mediaPlayer.getVLCVout().setWindowSize(sw, sh);
-                mediaPlayer.setScale(0);
-                Log.i(TAG, "surfaceCreated: " + url);
+                Log.i(TAG, "surfaceCreated: ");
             }
 
             @Override
             public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-
+                Log.i(TAG, "surfaceChanged: ");
             }
 
             @Override
             public void surfaceDestroyed(SurfaceHolder holder) {
                 Log.i(TAG, "surfaceDestroyed: ");
-                mediaPlayer.stop();
             }
         });
         mediaPlayer = new MediaPlayer(libvlc);
@@ -415,7 +407,54 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         mediaPlayer.setMedia(media);
         ivlcVout = mediaPlayer.getVLCVout();
         ivlcVout.setVideoView(surfaceView);
+        ivlcVout.addCallback(this);
         ivlcVout.attachViews();
         mediaPlayer.play();
+    }
+
+    @Override
+    public void onNewLayout(IVLCVout vlcVout, int width, int height, int visibleWidth, int visibleHeight, int sarNum, int sarDen) {
+
+        Log.i(TAG, "onNewLayout: visibleWidth " + visibleWidth);
+        Log.i(TAG, "onNewLayout: visibleHeight " + visibleHeight);
+
+        int sw = getWindow().getDecorView().getWidth();
+        int sh = getWindow().getDecorView().getHeight();
+
+
+        if (visibleWidth * visibleHeight == 0) return;
+
+        double aspectRatio = (double) visibleWidth / (double) visibleHeight;
+        double displayAspectRatio = (double) sw / (double) sh;
+
+       
+        if (aspectRatio > displayAspectRatio) {
+            newWidth = sw;
+            newHeight = (int) (sw / aspectRatio);
+        } else {
+            newWidth = (int) (sh * aspectRatio);
+            newHeight = sh;
+
+        }
+
+        Log.i(TAG, "onNewLayout: newWidth " + newWidth);
+        Log.i(TAG, "onNewLayout: newHeight " + newHeight);
+        surfaceHolder.setFixedSize(newWidth, newHeight);
+
+    }
+
+    @Override
+    public void onSurfacesCreated(IVLCVout vlcVout) {
+        Log.i(TAG, "onSurfacesCreated: ");
+    }
+
+    @Override
+    public void onSurfacesDestroyed(IVLCVout vlcVout) {
+        Log.i(TAG, "onSurfacesDestroyed: ");
+    }   
+
+    @Override
+    public void onHardwareAccelerationError(IVLCVout vlcVout) {
+        Log.i(TAG, "onHardwareAccelerationError: ");
     }
 }
