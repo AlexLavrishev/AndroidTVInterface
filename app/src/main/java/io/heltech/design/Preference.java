@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,11 +20,24 @@ public class Preference {
     final String INFO = "information";
     final String FORGOT_PASS = "forgot_password";
     final String CURRENT_CHANNEL = "current_channel";
+    public ArrayList<String> mode = new ArrayList<String>();
+
 
 
     private Context ctx;
 
     public Preference(Context ctx) {
+        mode.add("Disabled");
+        mode.add("Auto");
+        mode.add("blend");
+        mode.add("bob");
+        mode.add("discard");
+        mode.add("linear");
+        mode.add("mean");
+        mode.add("x");
+        mode.add("yadif");
+        mode.add("phosphor");
+        mode.add("ivtc");
         this.ctx = ctx;
     }
 

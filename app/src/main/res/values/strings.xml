@@ -5,6 +5,7 @@
 
     <string-array name="deinterlace">
         <item>Нет</item>
+        <item>Авто</item>
         <item>Отбрасывание</item>
         <item>Смешивание</item>
         <item>Среднее</item>
@@ -12,7 +13,6 @@
         <item>Линейное</item>
         <item>X</item>
         <item>Yadif</item>
-        <item>Yadif(2x)</item>
         <item>Фосфор</item>
         <item>Фильм NTSC (IVTC)</item>
     </string-array>
