@@ -15,6 +15,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -26,6 +27,7 @@ import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
@@ -73,7 +75,11 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
     ListView listView ;
     ChannelsDB dbHelper;
     Preference pref;
-
+    float x1,x2;
+    float y1,y2;
+    static final int MINX_DISTANCE = 150;
+    static final int MINY_DISTANCE = 100;
+    int currentChannelIndex = 0;
     //////VLC
     private SurfaceView surfaceView;
     private SurfaceHolder surfaceHolder;
@@ -88,6 +94,7 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
     Handler mVolHandler;
     int HIDE_TIME = 10000; // seconds
     int videoWidth, videoHeight;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -140,6 +147,8 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
         };
 
         mVolHandler.postDelayed(mVolRunnable, HIDE_TIME);
+
+
     }
 
 
@@ -163,14 +172,68 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
     @Override
     public boolean onTouch(View view, MotionEvent motionEvent) {
         int id  = view.getId();
-        if ( id == R.id.fullScreenFrame && motionEvent.getAction() == MotionEvent.ACTION_DOWN){
-            ToggleView();
+        if ( id == R.id.fullScreenFrame ){
+
+            switch(motionEvent.getAction()){
+                case MotionEvent.ACTION_DOWN:
+                    x1 = motionEvent.getX();
+                    y1 = motionEvent.getY();
+                    break;
+                case MotionEvent.ACTION_UP:
+                    x2 = motionEvent.getX();
+                    y2 = motionEvent.getY();
+                    float deltaX = x2 - x1;
+                    float deltaY = y2 - y1;
+
+                    if (deltaX > MINX_DISTANCE && Math.abs(deltaY) < MINY_DISTANCE && !visibleFlag) {
+                        PreviousChannel();
+                    }else if( Math.abs(deltaX) > MINX_DISTANCE && Math.abs(deltaY) < MINY_DISTANCE && !visibleFlag){
+                        NextChannel();
+                    }else if( Math.abs(deltaY) > MINY_DISTANCE ){
+                        // up down swipe
+                    }else{
+                        ToggleView();
+                    }
+                    break;
+            }
+            return true;
         }
-        if ( id == R.id.listview && motionEvent.getAction() == MotionEvent.ACTION_DOWN){
+        if ( ( id == R.id.listview  ) && motionEvent.getAction() == MotionEvent.ACTION_DOWN){
             mVolHandler.removeCallbacks(mVolRunnable);
             mVolHandler.postDelayed(mVolRunnable, HIDE_TIME);
         }
         return false;
+    }
+
+    private void PreviousChannel(){
+        currentChannelIndex--;
+        if ( currentChannelIndex < 0 ){
+            currentChannelIndex = list.size() - 1;
+
+        }
+        pref.setCurrentChannel(list.get(currentChannelIndex).getUrl());
+        PlayChannel();
+    }
+
+    private void NextChannel(){
+        currentChannelIndex++;
+        if ( currentChannelIndex > (list.size() - 1) ){
+            currentChannelIndex = 0;
+
+        }
+        pref.setCurrentChannel(list.get(currentChannelIndex).getUrl());
+        PlayChannel();
+    }
+
+    private void PlayChannel(){
+        url = pref.getCurrentChannel();
+        Toast.makeText(this, list.get(currentChannelIndex).getName(), Toast.LENGTH_SHORT).show ();
+        mediaPlayer.stop();
+        media = new Media(libvlc, Uri.parse(url));
+        media.setHWDecoderEnabled(true, true);
+        mediaPlayer.setMedia(media);
+        mediaPlayer.play();
+        setScreenSize();
     }
 
     @Override
@@ -194,13 +257,8 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
         pref.setCurrentChannel(list.get(i).getUrl());
-        url = pref.getCurrentChannel();
-        mediaPlayer.stop();
-        media = new Media(libvlc, Uri.parse(url));
-        media.setHWDecoderEnabled(true, true);
-        mediaPlayer.setMedia(media);
-        mediaPlayer.play();
-        setScreenSize();
+        currentChannelIndex = i;
+        PlayChannel();
     }
 
     public void onConfigurationChanged(Configuration newConfig) {
@@ -479,8 +537,26 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
         videoWidth = visibleWidth;
         videoHeight = visibleHeight;
         setScreenSize();
-
     }
+
+    @Override
+    public void onSurfacesCreated(IVLCVout vlcVout) {
+        Log.i(TAG, "onSurfacesCreated: ");
+    }
+
+    @Override
+    public void onSurfacesDestroyed(IVLCVout vlcVout) {
+        Log.i(TAG, "onSurfacesDestroyed: ");
+        mediaPlayer.stop();
+//        libvlc = null;
+//        surfaceHolder = null;
+    }
+
+    @Override
+    public void onHardwareAccelerationError(IVLCVout vlcVout) {
+        Log.i(TAG, "onHardwareAccelerationError: ");
+    }
+
     private void setScreenSize(){
 
         DisplayMetrics displayMetrics = new DisplayMetrics();
@@ -500,25 +576,7 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
             screenWidth = (int) (sh * aspectRatio);
             screenHeight = sh;
         }
-        
+
         surfaceHolder.setFixedSize(screenWidth, screenHeight);
-    }
-
-    @Override
-    public void onSurfacesCreated(IVLCVout vlcVout) {
-        Log.i(TAG, "onSurfacesCreated: ");
-    }
-
-    @Override
-    public void onSurfacesDestroyed(IVLCVout vlcVout) {
-        Log.i(TAG, "onSurfacesDestroyed: ");
-        mediaPlayer.stop();
-//        libvlc = null;
-//        surfaceHolder = null;
-    }
-
-    @Override
-    public void onHardwareAccelerationError(IVLCVout vlcVout) {
-        Log.i(TAG, "onHardwareAccelerationError: ");
     }
 }

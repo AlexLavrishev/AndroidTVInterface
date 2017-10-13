@@ -10,11 +10,11 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-        vectorDrawables.useSupportLibrary = true
+        vectorDrawables.useSupportLibrary = false
     }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
@@ -30,7 +30,6 @@ dependencies {
     compile 'com.android.support:support-v4:26.0.0-alpha1'
     compile 'com.android.support:support-vector-drawable:26.0.0-alpha1'
 
-//    compile 'de.mrmaffen:libvlc-android:2.1.12@aar'
     compile "de.mrmaffen:vlc-android-sdk:2.0.6"
     compile 'eu.the4thfloor.volley:com.android.volley:2015.05.28'
 
