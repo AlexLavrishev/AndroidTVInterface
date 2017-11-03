@@ -35,27 +35,21 @@ public class Settings extends AppCompatActivity implements View.OnClickListener,
         authBtn.setOnClickListener(this);
         deinterlaceBtn.setOnClickListener(this);
         bufferBtn.setOnClickListener(this);
-
         deinterlace = (Spinner) findViewById(R.id.deinterlace);
         ArrayAdapter<CharSequence> adapterDeinterlace = ArrayAdapter.createFromResource(this,
                 R.array.deinterlace, android.R.layout.simple_spinner_item);
         adapterDeinterlace.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         deinterlace.setAdapter(adapterDeinterlace);
-
-
         buffer = (Spinner) findViewById(R.id.buffer);
         ArrayAdapter<CharSequence> adapterBuffer = ArrayAdapter.createFromResource(this,
                 R.array.buffer, android.R.layout.simple_spinner_item);
         adapterBuffer.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         buffer.setAdapter(adapterBuffer);
-
         deinterlace.setOnItemSelectedListener(this);
         buffer.setOnItemSelectedListener(this);
-
         authText = (TextView) findViewById(R.id.authText);
         ctx = this;
         pref = new Preference(ctx);
-
         deinterlace.setSelection(pref.getDeinterlaceMode());
         buffer.setSelection(pref.getBufferMode());
     }

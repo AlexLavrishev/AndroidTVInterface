@@ -1,5 +1,6 @@
 package io.heltech.design;
 
+import android.app.LauncherActivity;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -16,21 +17,26 @@ import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.GestureDetector;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.AdapterView;
+import android.widget.BaseAdapter;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
-
+import android.view.ViewGroup.LayoutParams;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -59,8 +65,10 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import static android.content.ContentValues.TAG;
 
-public class MainActivity extends AppCompatActivity implements IVLCVout.Callback, View.OnTouchListener, View.OnClickListener, ListView.OnItemClickListener, SwipeRefreshLayout.OnRefreshListener {
+
+public class MainActivity extends AppCompatActivity implements IVLCVout.Callback, MediaPlayer.EventListener , View.OnTouchListener, View.OnClickListener, ListView.OnItemClickListener, SwipeRefreshLayout.OnRefreshListener {
 
     private static final String TAG = "MainActivity: ";
     RelativeLayout controlView;
@@ -94,7 +102,11 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
     Handler mVolHandler;
     int HIDE_TIME = 10000; // seconds
     int videoWidth, videoHeight;
+    int videoVisibleWidth, videoVisibleHeight;
+    int mSarDen, mSarNum;
 
+    boolean IS_SURFACE_FIT;
+    View listItem;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -127,11 +139,7 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
         fullviewBtn.setOnClickListener(this);
         controlView.setOnTouchListener(this);
         mySwipeRefreshLayout.setOnRefreshListener(this);
-
         FLAG_CREATED_SURFACE = true;
-
-
-
         mVolHandler = new Handler();
 
         mVolRunnable = new Runnable() {
@@ -145,9 +153,7 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
                 visibleFlag = false;
             }
         };
-
         mVolHandler.postDelayed(mVolRunnable, HIDE_TIME);
-
 
     }
 
@@ -159,9 +165,17 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
         InitListView();
         FLAG_CREATED_SURFACE = true;
         url = pref.getCurrentChannel();
+        IS_SURFACE_FIT = pref.getFitMode();
         initPlayer();
         InitInformation();
+        currentChannelIndex = pref.getCurrentChannelIndex();
+        Log.i(TAG, "run: " + listView.getChildCount());
+//        listView.getChildAt(currentChannelIndex).setBackgroundResource(R.drawable.list_item_styles_selected);
+
+
+
     }
+
 
     @Override
     protected void onDestroy(){
@@ -205,13 +219,14 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
         return false;
     }
 
+
     private void PreviousChannel(){
         currentChannelIndex--;
         if ( currentChannelIndex < 0 ){
             currentChannelIndex = list.size() - 1;
 
         }
-        pref.setCurrentChannel(list.get(currentChannelIndex).getUrl());
+        pref.setCurrentChannel(list.get(currentChannelIndex).getUrl(), currentChannelIndex);
         PlayChannel();
     }
 
@@ -221,7 +236,7 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
             currentChannelIndex = 0;
 
         }
-        pref.setCurrentChannel(list.get(currentChannelIndex).getUrl());
+        pref.setCurrentChannel(list.get(currentChannelIndex).getUrl(), currentChannelIndex);
         PlayChannel();
     }
 
@@ -233,7 +248,7 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
         media.setHWDecoderEnabled(true, true);
         mediaPlayer.setMedia(media);
         mediaPlayer.play();
-        setScreenSize();
+        setScreenSize(IS_SURFACE_FIT);
     }
 
     @Override
@@ -248,22 +263,35 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
                 break;
             case R.id.fullview_btn:
                 Log.i(TAG, "onClick: SettingsClick");
-                intent = new Intent(this, LoginActivity.class);
-                startActivity(intent);
+                IS_SURFACE_FIT = !IS_SURFACE_FIT;
+                pref.setFitMode(IS_SURFACE_FIT);
+                setScreenSize(IS_SURFACE_FIT);
                 break;
         }
     }
 
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-        pref.setCurrentChannel(list.get(i).getUrl());
+
+//        Log.i(TAG, "onItemClick: !!!" + view);
+//
+//        if  (listItem != null){
+//
+//            listItem.setBackgroundResource(R.drawable.list_item_styles);
+//        }else{
+//            Log.i(TAG, "onItemClick: listItem is null!!!");
+//        }
+//        view.setBackgroundResource(R.drawable.list_item_styles_selected);
+//        listItem = view;
+        pref.setCurrentChannel(list.get(i).getUrl(), i);
         currentChannelIndex = i;
+
         PlayChannel();
     }
 
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        setScreenSize();
+        setScreenSize(IS_SURFACE_FIT);
     }
 
     @Override
@@ -271,7 +299,6 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
         mySwipeRefreshLayout.setRefreshing(true);
         ReloadListViewAsync();
     }
-
 
     private void InitListView(){
         SQLiteDatabase database = dbHelper.getWritableDatabase();
@@ -296,12 +323,12 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
             }else{
                 Log.i(TAG, "InitListView: listTmp is full" );
                 list = listTmp;
-                adapter  = new LVAdapter(context, list);
+                adapter  = new LVAdapter(context, list, listView);
                 listView.setAdapter(adapter);
                 mySwipeRefreshLayout.setRefreshing(false);
             }
             if ( pref.getCurrentChannel() == null){
-                pref.setCurrentChannel(list.get(0).getUrl());
+                pref.setCurrentChannel(list.get(0).getUrl(), 0);
             }
 
         }
@@ -344,7 +371,7 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
                 }
                 Log.i(TAG, "onSuccess: Count  - " + count);
                 list = listTmp;
-                adapter  = new LVAdapter(context, list);
+                adapter  = new LVAdapter(context, list, listView);
                 listView.setAdapter(adapter);
                 mySwipeRefreshLayout.setRefreshing(false);
 
@@ -459,11 +486,26 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
         options.add("--aout=opensles");
         options.add("--audio-time-stretch");
         options.add("--avcodec-hw=any");
-//        options.add("-vvv");
+//        options.add("-vvvvv");
         options.add("--no-sub-autodetect-file");
 
 //        options.add("--network-caching=60000");
 
+        int networkCachingMode = pref.getBufferMode();
+        switch  (networkCachingMode){
+            case 0:
+                break;
+            case 1:
+                options.add("--network-caching=5000");
+                break;
+            case 2:
+                options.add("--network-caching=15000");
+                break;
+            case 3:
+                options.add("--network-caching=60000");
+                break;
+        }
+        Log.i(TAG, "initPlayer: networkCachingMode" + networkCachingMode);
         int indexMode = pref.getDeinterlaceMode();
         Log.i(TAG, "initPlayer deinterlace mode: " + pref.mode.get(indexMode));
         if  (indexMode == 0 ){
@@ -486,36 +528,6 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
             surfaceHolder = surfaceView.getHolder();
             surfaceHolder.setKeepScreenOn(true);
             FLAG_CREATED_SURFACE = false;
-//            surfaceHolder.addCallback(new SurfaceHolder.Callback() {
-//                @Override
-//                public void surfaceCreated(SurfaceHolder holder) {
-//                    int sw = getWindow().getDecorView().getWidth();
-//                    int sh = getWindow().getDecorView().getHeight();
-//                    if (sw * sh == 0) {
-//                        Log.e(TAG, "Invalid surface size");
-//                        return;
-//                    }
-//                    mediaPlayer.getVLCVout().setWindowSize(sw, sh);
-//
-////                    mediaPlayer.setScale(0);
-//                    Log.i(TAG, "surfaceCreated: " + url);
-//
-//                    FLAG_CREATED_SURFACE = false;
-//                }
-//
-//                @Override
-//                public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-//                    Log.i(TAG, "surfaceChanged: ");
-//                }
-//
-//                @Override
-//                public void surfaceDestroyed(SurfaceHolder holder) {
-//                    Log.i(TAG, "surfaceDestroyed: ");
-//                    mediaPlayer.stop();
-//                    libvlc = null;
-//                    surfaceHolder = null;
-//                }
-//            });
         }
 
         mediaPlayer = new MediaPlayer(libvlc);
@@ -527,16 +539,21 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
         ivlcVout.addCallback(this);
         ivlcVout.attachViews();
         mediaPlayer.play();
+        mediaPlayer.setEventListener(this);
+
+
+
     }
 
     @Override
     public void onNewLayout(IVLCVout vlcVout, int width, int height, int visibleWidth, int visibleHeight, int sarNum, int sarDen) {
-        Log.i(TAG, "onNewLayout: onClick");
-        Log.i(TAG, "onNewLayout: visibleWidth " + visibleWidth);
-        Log.i(TAG, "onNewLayout: visibleHeight " + visibleHeight);
-        videoWidth = visibleWidth;
-        videoHeight = visibleHeight;
-        setScreenSize();
+        mSarDen = sarDen;
+        mSarNum = sarNum;
+        videoWidth = width;
+        videoHeight = height;
+        videoVisibleWidth = visibleWidth;
+        videoVisibleHeight = visibleHeight;
+        setScreenSize(IS_SURFACE_FIT);
     }
 
     @Override
@@ -557,26 +574,77 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
         Log.i(TAG, "onHardwareAccelerationError: ");
     }
 
-    private void setScreenSize(){
-
+    private void setScreenSize( boolean mode ) {
         DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
         int sh = displayMetrics.heightPixels;
         int sw = displayMetrics.widthPixels;
-        displayMetrics = null;
-        if (videoWidth * videoHeight == 0) return;
-
-        double aspectRatio = (double) videoWidth / (double) videoHeight;
-        double displayAspectRatio = (double) sw / (double) sh;
-        int screenWidth, screenHeight;
-        if (aspectRatio > displayAspectRatio) {
-            screenWidth = sw;
-            screenHeight = (int) (sw / aspectRatio);
-        } else {
-            screenWidth = (int) (sh * aspectRatio);
-            screenHeight = sh;
+        if (mediaPlayer != null) {
+            final IVLCVout vlcVout = mediaPlayer.getVLCVout();
+            vlcVout.setWindowSize(sw, sh);
+        }
+        double dw = sw, dh = sh;
+        boolean isPortrait = getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT;
+        if (sw > sh && isPortrait || sw < sh && !isPortrait) {
+            dw = sh;
+            dh = sw;
+        }
+        // sanity check
+        if (dw * dh == 0 || videoWidth * videoHeight == 0) {
+            Log.e(TAG, "Invalid surface size");
+            return;
         }
 
-        surfaceHolder.setFixedSize(screenWidth, screenHeight);
+        double ar, vw;
+        if (mSarDen == mSarNum) {
+        /* No indication about the density, assuming 1:1 */
+            vw = videoVisibleWidth;
+            ar = (double)videoVisibleWidth / (double)videoVisibleHeight;
+        } else {
+        /* Use the specified aspect ratio */
+            vw = videoVisibleWidth * (double)mSarNum / mSarDen;
+            ar = vw / videoVisibleHeight;
+        }
+        double dar = dw / dh;
+        // compute the display aspect ratio
+        if (IS_SURFACE_FIT){
+                dh = dw / ar;
+        }else{
+            if (dar < ar)
+                dh = dw / ar;
+            else
+                dw = dh * ar;
+        }
+
+
+        LayoutParams lp = surfaceView.getLayoutParams();
+        lp.width  = (int) Math.ceil(dw * videoWidth / videoVisibleWidth);
+        lp.height = (int) Math.ceil(dh * videoHeight / videoVisibleHeight);
+        surfaceView.setLayoutParams(lp);
+    }
+
+    @Override
+    public void onEvent(MediaPlayer.Event event) {
+
+        switch  (event.type){
+            case MediaPlayer.Event.Opening:
+                break;
+            case MediaPlayer.Event.Playing:
+                break;
+            case MediaPlayer.Event.EncounteredError:
+                Log.i(TAG, "onEvent Playing");
+                Toast.makeText(this, "Ошибка открытия канала, попробуйте позже", Toast.LENGTH_LONG).show ();
+
+                Handler nextChHandler = new Handler();
+                Runnable nextCh = new Runnable() {
+                    @Override
+                    public void run() {
+                        NextChannel();
+                    }
+                };
+                nextChHandler.postDelayed(nextCh, 4000);
+                break;
+
+        }
     }
 }

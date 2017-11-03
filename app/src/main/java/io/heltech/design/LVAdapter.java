@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.TextView;
 import java.util.List;
 
@@ -23,8 +24,12 @@ import static android.content.ContentValues.TAG;
 public class LVAdapter extends BaseAdapter {
     private List<Channel> list;
     private LayoutInflater layoutInflater;
-    public LVAdapter(Context context, List<Channel> list) {
+    private ListView lv;
+    Preference pref ;
+    public LVAdapter(Context context, List<Channel> list, ListView listView ) {
         this.list = list;
+        this.lv = listView;
+
         layoutInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     }
 
@@ -46,22 +51,25 @@ public class LVAdapter extends BaseAdapter {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         View view = convertView;
-
-
+        Channel channel = getChannel(position);
         if (view == null){
             view = layoutInflater.inflate(R.layout.list_item, parent, false);
         }
-
-        Channel channel = getChannel(position);
-
         TextView name = (TextView) view.findViewById(R.id.name);
         name.setText(channel.getName());
         TextView url = (TextView) view.findViewById(R.id.url);
         url.setText(channel.getUrl());
-
         Bitmap img =  BitmapFactory.decodeFile(channel.getLogo());
         ImageView logo = (ImageView) view.findViewById(R.id.logo);
         logo.setImageBitmap(img);
+        view.setBackgroundResource(R.drawable.list_item_styles);
+        if (lv.isItemChecked(position)){
+            Log.i(TAG, "getView: " + position);
+            view.setBackgroundResource(R.drawable.list_item_styles_selected);
+            return view;
+        }
+
+
         return view;
     }
 

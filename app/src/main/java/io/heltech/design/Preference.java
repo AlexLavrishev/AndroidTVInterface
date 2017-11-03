@@ -20,6 +20,8 @@ public class Preference {
     final String INFO = "information";
     final String FORGOT_PASS = "forgot_password";
     final String CURRENT_CHANNEL = "current_channel";
+    final String CURRENT_CHANNEL_INDEX = "current_channel_index";
+    final String FIT_MODE = "fit_mode";
     public ArrayList<String> mode = new ArrayList<String>();
 
 
@@ -60,11 +62,19 @@ public class Preference {
     public String getForgotPassText(){
         return getString(FORGOT_PASS, ctx);
     }
-
+    public boolean getFitMode() {
+        if ( getInt(FIT_MODE, ctx) == 1)
+            return true;
+        else
+            return false;
+    }
     public String getCurrentChannel(){
         return getString(CURRENT_CHANNEL, ctx);
     }
 
+    public int getCurrentChannelIndex() {
+        return getInt(CURRENT_CHANNEL_INDEX, ctx);
+    }
 
     public void setToken(String token){
         setString(TOKEN, token, ctx);
@@ -82,10 +92,19 @@ public class Preference {
         setString(INFO, text, ctx);
     }
 
+    public void setFitMode(boolean mode){
+        if (mode)
+            setInt(FIT_MODE, 1, ctx);
+        else
+            setInt(FIT_MODE, 0, ctx);
+
+    }
+
     public void setForgotPassText(String text){
         setString(FORGOT_PASS, text, ctx);
     }
-    public void setCurrentChannel(String text){
+    public void setCurrentChannel(String text, int id){
+        setInt(CURRENT_CHANNEL_INDEX, id, ctx);
         setString(CURRENT_CHANNEL, text, ctx);
     }
 
@@ -121,4 +140,5 @@ public class Preference {
             return false;
         }
     }
+
 }
