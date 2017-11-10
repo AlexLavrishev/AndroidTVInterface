@@ -1,6 +1,6 @@
 package io.heltech.design;
 
-import android.app.LauncherActivity;
+import android.animation.ValueAnimator;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -11,30 +11,24 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Handler;
+import android.support.v4.view.animation.LinearOutSlowInInterpolator;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.GestureDetector;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 import android.view.ViewGroup.LayoutParams;
 
@@ -65,61 +59,60 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import static android.content.ContentValues.TAG;
 
 
 public class MainActivity extends AppCompatActivity implements IVLCVout.Callback, MediaPlayer.EventListener , View.OnTouchListener, View.OnClickListener, ListView.OnItemClickListener, SwipeRefreshLayout.OnRefreshListener {
 
     private static final String TAG = "MainActivity: ";
-    RelativeLayout controlView;
-    FrameLayout mainView;
     SwipeRefreshLayout mySwipeRefreshLayout;
-    boolean visibleFlag = true;
+    FrameLayout preloadChannelContainer;
+    FrameLayout preloadChannelView;
+    RelativeLayout controlView;
     ImageButton settingsBtn;
     ImageButton fullviewBtn;
-    List<Channel> list;
-    LVAdapter adapter ;
-    Context context;
-    ListView listView ;
+    Runnable mVolRunnable;
+    FrameLayout mainView;
+    Handler mVolHandler;
     ChannelsDB dbHelper;
+    List<Channel> list;
+    LVAdapter adapter;
+    ListView listView;
+    Context context;
     Preference pref;
-    float x1,x2;
-    float y1,y2;
+    String url;
     static final int MINX_DISTANCE = 150;
     static final int MINY_DISTANCE = 100;
     int currentChannelIndex = 0;
+    boolean visibleFlag = true;
+    float x1,x2;
+    float y1,y2;
+
     //////VLC
-    private SurfaceView surfaceView;
-    private SurfaceHolder surfaceHolder;
-    private LibVLC libvlc = null;
     private MediaPlayer mediaPlayer = null;
-    private IVLCVout ivlcVout;
-    private Media media;
-    String url;
+    private SurfaceHolder surfaceHolder;
+    private SurfaceView surfaceView;
     boolean FLAG_CREATED_SURFACE;
-
-    Runnable mVolRunnable;
-    Handler mVolHandler;
-    int HIDE_TIME = 10000; // seconds
-    int videoWidth, videoHeight;
-    int videoVisibleWidth, videoVisibleHeight;
-    int mSarDen, mSarNum;
-
+    private LibVLC libvlc = null;
+    private IVLCVout ivlcVout;
     boolean IS_SURFACE_FIT;
-    View listItem;
+    private Media media;
+    int videoWidth, videoHeight;
+    int videoVisibleHeight;
+    int videoVisibleWidth;
+    int HIDE_TIME = 10000;
+    int mSarDen, mSarNum;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.i(TAG, "onCreate: ");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
         context = this;
         pref = new Preference(context);
         dbHelper = new ChannelsDB(this);
+        InitInformation();
         if ( pref.getLogin() == null ){
             Intent intent = new Intent(this, LoginActivity.class);
             startActivity(intent);
@@ -131,7 +124,8 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
         surfaceView = (SurfaceView) findViewById(R.id.player_surface);
         controlView = (RelativeLayout)findViewById(R.id.control_view);
         mySwipeRefreshLayout = (SwipeRefreshLayout)findViewById(R.id.swiperefresh);
-
+        preloadChannelView = (FrameLayout)findViewById(R.id.preload_channel);
+        preloadChannelContainer = (FrameLayout)findViewById(R.id.preload_channel_container);
         mainView.setOnTouchListener(this);
         listView.setOnItemClickListener(this);
         listView.setOnTouchListener(this);
@@ -141,7 +135,6 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
         mySwipeRefreshLayout.setOnRefreshListener(this);
         FLAG_CREATED_SURFACE = true;
         mVolHandler = new Handler();
-
         mVolRunnable = new Runnable() {
             @Override
             public void run() {
@@ -154,9 +147,7 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
             }
         };
         mVolHandler.postDelayed(mVolRunnable, HIDE_TIME);
-
     }
-
 
     @Override
     protected void onResume() {
@@ -167,15 +158,17 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
         url = pref.getCurrentChannel();
         IS_SURFACE_FIT = pref.getFitMode();
         initPlayer();
-        InitInformation();
         currentChannelIndex = pref.getCurrentChannelIndex();
-        Log.i(TAG, "run: " + listView.getChildCount());
-//        listView.getChildAt(currentChannelIndex).setBackgroundResource(R.drawable.list_item_styles_selected);
-
-
+        if (IS_SURFACE_FIT){
+            fullviewBtn.setImageResource(R.drawable.normal_screen);
+        }else{
+            fullviewBtn.setImageResource(R.drawable.full_screen);
+        }
+        setStyleToListViewItem(currentChannelIndex, false);
+//        listView.setSelection(currentChannelIndex);
+        listView.setVerticalScrollbarPosition(15881);
 
     }
-
 
     @Override
     protected void onDestroy(){
@@ -187,7 +180,6 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
     public boolean onTouch(View view, MotionEvent motionEvent) {
         int id  = view.getId();
         if ( id == R.id.fullScreenFrame ){
-
             switch(motionEvent.getAction()){
                 case MotionEvent.ACTION_DOWN:
                     x1 = motionEvent.getX();
@@ -219,28 +211,31 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
         return false;
     }
 
-
     private void PreviousChannel(){
+        if (list == null)
+            return;
+
         currentChannelIndex--;
         if ( currentChannelIndex < 0 ){
             currentChannelIndex = list.size() - 1;
-
         }
         pref.setCurrentChannel(list.get(currentChannelIndex).getUrl(), currentChannelIndex);
-        PlayChannel();
+        PlayChannel(false);
     }
 
     private void NextChannel(){
+        if (list == null)
+            return;
+
         currentChannelIndex++;
         if ( currentChannelIndex > (list.size() - 1) ){
             currentChannelIndex = 0;
-
         }
         pref.setCurrentChannel(list.get(currentChannelIndex).getUrl(), currentChannelIndex);
-        PlayChannel();
+        PlayChannel(false);
     }
 
-    private void PlayChannel(){
+    private void PlayChannel(boolean itemClick){
         url = pref.getCurrentChannel();
         Toast.makeText(this, list.get(currentChannelIndex).getName(), Toast.LENGTH_SHORT).show ();
         mediaPlayer.stop();
@@ -249,44 +244,53 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
         mediaPlayer.setMedia(media);
         mediaPlayer.play();
         setScreenSize(IS_SURFACE_FIT);
+        setStyleToListViewItem(currentChannelIndex, itemClick);
     }
 
     @Override
     public void onClick(View view) {
         int id  = view.getId();
         Intent intent;
+
         switch (id){
             case R.id.settings_btn:
-                Log.i(TAG, "onClick: SettingsClick");
                 intent = new Intent(this, Settings.class);
                 startActivity(intent);
                 break;
             case R.id.fullview_btn:
-                Log.i(TAG, "onClick: SettingsClick");
                 IS_SURFACE_FIT = !IS_SURFACE_FIT;
                 pref.setFitMode(IS_SURFACE_FIT);
                 setScreenSize(IS_SURFACE_FIT);
+                ValueAnimator animator = ValueAnimator.ofFloat(1f,90f);
+                animator.setInterpolator(new LinearOutSlowInInterpolator());
+                animator.setDuration(150);
+                animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                    @Override
+                    public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                        float value = (float) valueAnimator.getAnimatedValue();
+                        if (IS_SURFACE_FIT){
+                            fullviewBtn.setRotation(value);
+                            if (value > 45f)
+                                fullviewBtn.setImageResource(R.drawable.normal_screen);
+                        }else{
+                            fullviewBtn.setRotation(-value);
+                            if (value > 45f)
+                                fullviewBtn.setImageResource(R.drawable.full_screen);
+                        }
+                    }
+                });
+                animator.start();
                 break;
         }
+
     }
 
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-
-//        Log.i(TAG, "onItemClick: !!!" + view);
-//
-//        if  (listItem != null){
-//
-//            listItem.setBackgroundResource(R.drawable.list_item_styles);
-//        }else{
-//            Log.i(TAG, "onItemClick: listItem is null!!!");
-//        }
-//        view.setBackgroundResource(R.drawable.list_item_styles_selected);
-//        listItem = view;
         pref.setCurrentChannel(list.get(i).getUrl(), i);
         currentChannelIndex = i;
-
-        PlayChannel();
+        PlayChannel(true);
+        Log.i(TAG, "onItemClick: ");
     }
 
     public void onConfigurationChanged(Configuration newConfig) {
@@ -314,14 +318,9 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
             do {
                 listTmp.add(new Channel(cursor.getInt(idIndex), cursor.getString(nameIndex), cursor.getString(streamIndex), path + "/logo" + cursor.getString(logoIndex) + ".png" ));
             } while (cursor.moveToNext());
-
-
-
             if (listTmp == null){
-                Log.i(TAG, "InitListView: listTmp is null" );
                 ReloadListViewAsync();
             }else{
-                Log.i(TAG, "InitListView: listTmp is full" );
                 list = listTmp;
                 adapter  = new LVAdapter(context, list, listView);
                 listView.setAdapter(adapter);
@@ -330,7 +329,6 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
             if ( pref.getCurrentChannel() == null){
                 pref.setCurrentChannel(list.get(0).getUrl(), 0);
             }
-
         }
         cursor.close();
     }
@@ -340,7 +338,6 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
         final RequestHandle requestHandle;
         client = new AsyncHttpClient();
         String playlistURL = "http://ott.inmart.tv/playlist?token=" + pref.getToken();
-        Log.i(TAG, "ReloadListViewAsync: " + playlistURL);
         requestHandle = client.get(playlistURL , new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
@@ -369,7 +366,6 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
                         database.insert(ChannelsDB.TABLE_CHANNELS, null, contentValues);
                     }
                 }
-                Log.i(TAG, "onSuccess: Count  - " + count);
                 list = listTmp;
                 adapter  = new LVAdapter(context, list, listView);
                 listView.setAdapter(adapter);
@@ -467,30 +463,32 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
             @Override
             public void onErrorResponse(VolleyError error) {
                 // TODO Auto-generated method stub
-                Log.i(TAG, "onErrorResponses: " + error.toString());
             }
         });
         queue.add(jsObjRequest);
+    }
+
+    private void setStyleToListViewItem(int id, boolean itemClick){
+        if (list == null)
+            return;
+        adapter.setSelectedIndex(id);
+        adapter.notifyDataSetChanged();
     }
 
     ///// VLC
     private void initPlayer() {
 
         if (url == null){
-            Log.i(TAG, "initPlayer: Empty playlist");
+            Toast.makeText(this, "Авторизуйтесь в приложении и выберите канал из списка для просмотра", Toast.LENGTH_LONG).show ();
+            preloadChannelView.animate().alpha(0.0f).setDuration(200);
             return;
-        }else{
-            Log.i(TAG, "initPlayer: " + url);
         }
         ArrayList<String> options = new ArrayList<>();
         options.add("--aout=opensles");
         options.add("--audio-time-stretch");
         options.add("--avcodec-hw=any");
 //        options.add("-vvvvv");
-        options.add("--no-sub-autodetect-file");
-
-//        options.add("--network-caching=60000");
-
+//        options.add("--no-sub-autodetect-file");
         int networkCachingMode = pref.getBufferMode();
         switch  (networkCachingMode){
             case 0:
@@ -505,9 +503,7 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
                 options.add("--network-caching=60000");
                 break;
         }
-        Log.i(TAG, "initPlayer: networkCachingMode" + networkCachingMode);
         int indexMode = pref.getDeinterlaceMode();
-        Log.i(TAG, "initPlayer deinterlace mode: " + pref.mode.get(indexMode));
         if  (indexMode == 0 ){
             options.add("--deinterlace=0");
         }else if(indexMode == 1) {
@@ -518,18 +514,12 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
             options.add("--deinterlace-mode=" + pref.mode.get(indexMode) );
             options.add("--video-filter=deinterlace");
         }
-
-
         libvlc = new LibVLC(MainActivity.this, options);
-
         if (FLAG_CREATED_SURFACE){
-            Log.i(TAG, "initPlayer: first player init");
-
             surfaceHolder = surfaceView.getHolder();
             surfaceHolder.setKeepScreenOn(true);
             FLAG_CREATED_SURFACE = false;
         }
-
         mediaPlayer = new MediaPlayer(libvlc);
         media = new Media(libvlc, Uri.parse(url));
         media.setHWDecoderEnabled(true, true);
@@ -540,9 +530,6 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
         ivlcVout.attachViews();
         mediaPlayer.play();
         mediaPlayer.setEventListener(this);
-
-
-
     }
 
     @Override
@@ -558,20 +545,23 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
 
     @Override
     public void onSurfacesCreated(IVLCVout vlcVout) {
-        Log.i(TAG, "onSurfacesCreated: ");
     }
 
     @Override
     public void onSurfacesDestroyed(IVLCVout vlcVout) {
-        Log.i(TAG, "onSurfacesDestroyed: ");
+        View c = listView.getChildAt(0);
+        Log.i(TAG, "onSurfacesDestroyed: " +  listView.getFirstVisiblePosition() * c.getHeight());
         mediaPlayer.stop();
-//        libvlc = null;
-//        surfaceHolder = null;
     }
 
     @Override
     public void onHardwareAccelerationError(IVLCVout vlcVout) {
-        Log.i(TAG, "onHardwareAccelerationError: ");
+        mediaPlayer.stop();
+        media = new Media(libvlc, Uri.parse(url));
+        media.setHWDecoderEnabled(false, false);
+        mediaPlayer.setMedia(media);
+        mediaPlayer.play();
+        setScreenSize(IS_SURFACE_FIT);
     }
 
     private void setScreenSize( boolean mode ) {
@@ -591,7 +581,6 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
         }
         // sanity check
         if (dw * dh == 0 || videoWidth * videoHeight == 0) {
-            Log.e(TAG, "Invalid surface size");
             return;
         }
 
@@ -615,8 +604,6 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
             else
                 dw = dh * ar;
         }
-
-
         LayoutParams lp = surfaceView.getLayoutParams();
         lp.width  = (int) Math.ceil(dw * videoWidth / videoVisibleWidth);
         lp.height = (int) Math.ceil(dh * videoHeight / videoVisibleHeight);
@@ -625,16 +612,29 @@ public class MainActivity extends AppCompatActivity implements IVLCVout.Callback
 
     @Override
     public void onEvent(MediaPlayer.Event event) {
-
         switch  (event.type){
             case MediaPlayer.Event.Opening:
+//                Log.i(TAG, "onEvent: Opening ");
+                preloadChannelView.animate().alpha(1.0f).setDuration(200);
+                break;
+            case MediaPlayer.Event.Vout:
+//                Log.i(TAG, "onEvent: Opening Vout");
+                Handler preloadHandler = new Handler();
+                Runnable preload = new Runnable() {
+                    @Override
+                    public void run() {
+                        preloadChannelView.animate().alpha(0.0f).setDuration(200);
+                    }
+                };
+                preloadHandler.postDelayed(preload, 200);
                 break;
             case MediaPlayer.Event.Playing:
                 break;
+            case MediaPlayer.Event.Stopped:
+//                Log.i(TAG, "onEvent: Opening Stopped");
+                break;
             case MediaPlayer.Event.EncounteredError:
-                Log.i(TAG, "onEvent Playing");
                 Toast.makeText(this, "Ошибка открытия канала, попробуйте позже", Toast.LENGTH_LONG).show ();
-
                 Handler nextChHandler = new Handler();
                 Runnable nextCh = new Runnable() {
                     @Override

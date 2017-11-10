@@ -4,17 +4,19 @@ android {
     compileSdkVersion 26
     buildToolsVersion "26.0.0"
     defaultConfig {
-        applicationId "io.heltech.design"
-        minSdkVersion 19
+        applicationId "windylabs.com.vlcplayersample"
+        minSdkVersion 17
         targetSdkVersion 26
-        versionCode 1
-        versionName "1.0"
+        versionCode 6
+        versionName "2.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = false
+        project.ext.set("archivesBaseName", "Inmart_TV-" + defaultConfig.versionName);
     }
     buildTypes {
         release {
             minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
@@ -28,7 +30,7 @@ dependencies {
     compile group: 'org.apache.commons', name: 'commons-io', version: '1.3.2'
     compile 'com.android.support:appcompat-v7:26.0.0-alpha1'
     compile 'com.android.support:support-v4:26.0.0-alpha1'
-    compile 'com.android.support:support-vector-drawable:26.0.0-alpha1'
+
     compile "de.mrmaffen:vlc-android-sdk:2.0.6"
     compile 'eu.the4thfloor.volley:com.android.volley:2015.05.28'
     compile 'com.loopj.android:android-async-http:1.4.9'

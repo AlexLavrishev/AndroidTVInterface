@@ -67,32 +67,15 @@
             android:layout_alignStart="@+id/passField"
             android:layout_marginBottom="15dp" />
 
-        <EditText
-            android:inputType="textPassword"
-            android:background="@drawable/edit_text"
-            android:ems="10"
-            android:layout_height="40dp"
-            android:layout_width="250dp"
-            android:paddingLeft="15dp"
-            android:id="@+id/passField"
-            android:hint="•••••••"
-            android:textColorLink="@android:color/white"
-            android:layout_marginBottom="14dp"
-            android:gravity="center_vertical|center_horizontal"
-            android:paddingRight="15dp"
-            android:layout_above="@+id/loginBtn"
-            android:layout_alignStart="@+id/loginField"
-            android:focusedByDefault="false"
-            android:focusable="auto"
-            android:textSize="14sp" />
+
 
         <EditText
             android:inputType="textPersonName"
             android:ems="10"
+            android:background="@drawable/edit_text"
             android:id="@+id/loginField"
             android:hint="Имя пользователя"
             android:textColorLink="@android:color/white"
-            android:background="@drawable/edit_text"
             android:layout_height="40dp"
             android:layout_width="250dp"
             android:paddingLeft="15dp"
@@ -102,6 +85,24 @@
             android:paddingRight="15dp"
             android:layout_above="@+id/passField"
             android:layout_centerHorizontal="true"
+            android:focusedByDefault="true"
+            android:textSize="14sp" />
+        <EditText
+            android:inputType="textPassword"
+            android:ems="10"
+            android:background="@drawable/edit_text"
+            android:id="@+id/passField"
+            android:hint="•••••••"
+            android:textColorLink="@android:color/white"
+            android:layout_height="40dp"
+            android:layout_width="250dp"
+            android:paddingLeft="15dp"
+            android:typeface="normal"
+            android:layout_marginBottom="14dp"
+            android:gravity="center_vertical|center_horizontal"
+            android:paddingRight="15dp"
+            android:layout_above="@+id/loginBtn"
+            android:layout_alignStart="@+id/loginField"
             android:focusedByDefault="false"
             android:textSize="14sp" />
 

@@ -25,6 +25,7 @@ public class LVAdapter extends BaseAdapter {
     private List<Channel> list;
     private LayoutInflater layoutInflater;
     private ListView lv;
+    private static int selectedIndex;
     Preference pref ;
     public LVAdapter(Context context, List<Channel> list, ListView listView ) {
         this.list = list;
@@ -62,15 +63,29 @@ public class LVAdapter extends BaseAdapter {
         Bitmap img =  BitmapFactory.decodeFile(channel.getLogo());
         ImageView logo = (ImageView) view.findViewById(R.id.logo);
         logo.setImageBitmap(img);
-        view.setBackgroundResource(R.drawable.list_item_styles);
-        if (lv.isItemChecked(position)){
-            Log.i(TAG, "getView: " + position);
+//        view.setBackgroundResource(R.drawable.list_item_styles);
+//        if (lv.isItemChecked(position)){
+//            Log.i(TAG, "getView: " + position);
+//            view.setBackgroundResource(R.drawable.list_item_styles_selected);
+//            return view;
+//        }
+
+        if (position == selectedIndex){
             view.setBackgroundResource(R.drawable.list_item_styles_selected);
-            return view;
+
+        }
+        else{
+            view.setBackgroundResource(R.drawable.list_item_styles);
         }
 
 
+
+
         return view;
+    }
+
+    public static void setSelectedIndex(int ind) {
+        selectedIndex = ind;
     }
 
     private Channel getChannel(int position){

@@ -48,10 +48,6 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
     EditText loginField, passField;
     AlertDialog.Builder builder;
     AlertDialog alert;
-    final String TOKEN = "token";
-    final String LOGIN = "login";
-    final String INFO = "information";
-    final String FORGOT_PASS = "forgot_password";
     Context context;
     ChannelsDB dbHelper;
     Preference pref;
@@ -76,7 +72,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
         backBtn.setOnClickListener(this);
         forgotPassBtn.setOnClickListener(this);
 
-
+        loginField.setSelection(0);
 
     }
 
@@ -149,7 +145,6 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
         String lp = loginField.getText().toString() + passField.getText().toString();
         final String token = md5(lp);
         String playlist = "http://ott.inmart.tv/playlist?token=" + token;
-        Log.d(TAG, "CheckAuth: "+ playlist);
         client = new AsyncHttpClient();
         requestHandle = client.get(playlist , new AsyncHttpResponseHandler() {
             @Override
@@ -189,7 +184,6 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                 Toast toast = Toast.makeText(getApplicationContext(),
                         "Не правильные имя пользователя или пароль.", Toast.LENGTH_LONG);
                 toast.show();
-                Log.d(TAG, "onFailure: "+ responseBody.toString());
                 loginField.setText("");
                 passField.setText("");
 
